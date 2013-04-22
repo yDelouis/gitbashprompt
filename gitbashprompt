@@ -98,14 +98,13 @@ __git_branch() {
 
 __git_status() {
   cd "$curpath"
-  ahead=
-  behind=
-  staged=$(git diff --cached --numstat | wc -l)
-  unstaged=
-  conflict=
-  untracked=$(git status --porcelain | grep "^??" | wc -l)
+  status=$(git status --porcelain) 
+  staged=$(echo "$status" | grep -c "^A") 
+  unstaged=$(echo "$status" | grep -c "^U")
+  conflict=$(echo "$status" | grep -c "^U")
+  untracked=$(echo "$status" | grep -c "^??")
   printf $col"("
-  printf "plop"
+  printf "$staged $unstaged $conflict $untracked"
   printf ")"$nocol
   cd "$path"
 }
