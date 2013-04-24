@@ -24,6 +24,10 @@ __git_bash_prompt() {
  ###
 
  ### Init symbols
+  # ahead
+  local asym="↑"
+  # behind
+  local bsym="↓"
   # conflict
   local csym="✘"
   # staged
@@ -86,7 +90,10 @@ __git_bash_prompt() {
       __git_branch 
       if [ "$curpath" = "$toplevel" ]
       then
+        printf $col"("
+        __git_branch_status
         __git_status
+        printf ")"$nocol
       fi
     fi
    ###
@@ -112,8 +119,28 @@ __git_branch() {
   fi
 }
 
+__git_branch_status() {
+  branch=$(git branch 2>/dev/null | sed -n 's/^* //p')
+  remote=$(git config branch."$branch".remote)
+  rmbranch=$(git config branch."$branch".merge | cut -c 12-)
+  revlist=$(git rev-list --left-right refs/remotes/"$remote"/"$rmbranch"...HEAD)
+  ahead=$(echo "$revlist" | grep -c "^>")
+  behind=$(echo "$revlist" | grep -c "^<")
+  if [ $ahead != "0" ]
+  then
+    printf "$asym""$ahead"
+  fi
+  if [ $behind != "0" ]
+  then
+    printf "$bsym""$behind"
+  fi
+  if [ $ahead != "0" -o $behind != "0" ]
+  then
+    printf "|"
+  fi
+}
+
 __git_status() {
-  printf $col"("
   status=$(git status --porcelain | cut -c 1-2) 
   conflict=$(echo "$status" | grep -c -e "DD" -e "AA" -e "U")
   if [ $conflict != "0" ]
@@ -141,7 +168,6 @@ __git_status() {
       printf "$clcol""$clsym""$col"
     fi
   fi
-  printf ")"$nocol
 }
 
 PS1='\u@\h:$(__git_bash_prompt "\w")\$ '
