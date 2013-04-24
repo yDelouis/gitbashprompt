@@ -17,6 +17,23 @@ __git_bash_prompt() {
   local col='\001\e[36m\002' # blue
   # detached HEAD color
   local dcol='\001\e[31m\002' # red
+  # conflict color
+  local ccol='\001\e[31m\002' # red
+  # Clean color
+  local clcol='\001\e[32m\002' # green
+ ###
+
+ ### Init symbols
+  # conflict
+  local csym="✘"
+  # staged
+  local ssym="●"
+  # unstaged
+  local ussym="~"
+  # untracked
+  local utsym="…"
+  # clean
+  local clsym="✔"
  ###
 
  ### Split current path
@@ -56,17 +73,21 @@ __git_bash_prompt() {
       efolder="$HOME"
     fi
    ###
- 
+   
    ### Append efolder to current path 
     curpath="$curpath$efolder"
    ###
 
    ### Print folder and git infos
     printf "$folder"
-    __git_branch 
-    if [ "$curpath" = "$toplevel" ]
+    cd "$efolder"
+    if [ -e .git ]
     then
-      __git_status
+      __git_branch 
+      if [ "$curpath" = "$toplevel" ]
+      then
+        __git_status
+      fi
     fi
    ###
 
@@ -77,36 +98,50 @@ __git_bash_prompt() {
 }
 
 __git_branch() {
-  cd "$curpath"
-  if [ -e .git ]
+  gitinfo="$(git branch 2>/dev/null | sed -n 's/^* //p')"
+  if [ "$gitinfo" ]
   then
-    gitinfo="$(git branch 2>/dev/null | sed -n 's/^* //p')"
-    if [ "$gitinfo" ]
+    if [ "$gitinfo" = "(no branch)" ]
     then
-      if [ "$gitinfo" = "(no branch)" ]
-      then
-        gitinfo="$(git describe 2>/dev/null ||
-                   git rev-list HEAD -1 | cut -c-7)"
-        printf $col@$dcol"$gitinfo"$nocol
-      else
-        printf $col@"$gitinfo"$nocol
-      fi
+      gitinfo="$(git describe 2>/dev/null ||
+                 git rev-list HEAD -1 | cut -c-7)"
+      printf $col@$dcol"$gitinfo"$nocol
+    else
+      printf $col@"$gitinfo"$nocol
     fi
   fi
-  cd "$path"
 }
 
 __git_status() {
-  cd "$curpath"
-  status=$(git status --porcelain) 
-  staged=$(echo "$status" | grep -c "^A") 
-  unstaged=$(echo "$status" | grep -c "^U")
-  conflict=$(echo "$status" | grep -c "^U")
-  untracked=$(echo "$status" | grep -c "^??")
   printf $col"("
-  printf "$staged $unstaged $conflict $untracked"
+  status=$(git status --porcelain | cut -c 1-2) 
+  conflict=$(echo "$status" | grep -c -e "DD" -e "AA" -e "U")
+  if [ $conflict != "0" ]
+  then
+    printf "$ccol""$conflict""$csym""$col"
+  else
+    staged=$(echo "$status" | grep -c -e "^M" -e "^A" -e "^D" -e "^R" -e "^C") 
+    unstaged=$(echo "$status" | grep -c -e "M$" -e "D$")
+    untracked=$(echo "$status" | grep -c "??")
+    if [ $staged != "0" -o $unstaged != "0" -o $untracked != "0" ]
+    then
+      if [ $staged != "0" ]
+      then
+        printf "$ssym""$staged"
+      fi
+      if [ $unstaged != "0" ]
+      then
+        printf "$ussym""$unstaged"
+      fi
+      if [ $untracked != "0" ]
+      then 
+        printf "$utsym""$untracked"
+      fi
+    else
+      printf "$clcol""$clsym""$col"
+    fi
+  fi
   printf ")"$nocol
-  cd "$path"
 }
 
 PS1='\u@\h:$(__git_bash_prompt "\w")\$ '
