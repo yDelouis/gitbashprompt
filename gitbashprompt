@@ -121,22 +121,27 @@ __git_branch() {
 
 __git_branch_status() {
   branch=$(git branch 2>/dev/null | sed -n 's/^* //p')
-  remote=$(git config branch."$branch".remote)
-  rmbranch=$(git config branch."$branch".merge | cut -c 12-)
-  revlist=$(git rev-list --left-right refs/remotes/"$remote"/"$rmbranch"...HEAD)
-  ahead=$(echo "$revlist" | grep -c "^>")
-  behind=$(echo "$revlist" | grep -c "^<")
-  if [ $ahead != "0" ]
+  if [ "$branch" != "(no branch)" ]
   then
-    printf "$asym""$ahead"
-  fi
-  if [ $behind != "0" ]
-  then
-    printf "$bsym""$behind"
-  fi
-  if [ $ahead != "0" -o $behind != "0" ]
-  then
-    printf "|"
+    remote=$(git config branch."$branch".remote 2>/dev/null) &&
+    rmbranch=$(git config branch."$branch".merge | cut -c 12-) &&
+    revlist=$(git rev-list --left-right refs/remotes/"$remote"/"$rmbranch"...HEAD) && 
+    (
+      ahead=$(echo "$revlist" | grep -c "^>")
+      behind=$(echo "$revlist" | grep -c "^<")
+      if [ $ahead != "0" ]
+      then
+        printf "$asym$ahead"
+      fi
+      if [ $behind != "0" ]
+      then
+        printf "$bsym$behind"
+      fi
+      if [ $ahead != "0" -o $behind != "0" ]
+      then
+        printf "|"
+      fi
+    )
   fi
 }
 
@@ -145,7 +150,7 @@ __git_status() {
   conflict=$(echo "$status" | grep -c -e "DD" -e "AA" -e "U")
   if [ $conflict != "0" ]
   then
-    printf "$ccol""$conflict""$csym""$col"
+    printf "$ccol$conflict$csym$col"
   else
     staged=$(echo "$status" | grep -c -e "^M" -e "^A" -e "^D" -e "^R" -e "^C") 
     unstaged=$(echo "$status" | grep -c -e "M$" -e "D$")
@@ -154,15 +159,15 @@ __git_status() {
     then
       if [ $staged != "0" ]
       then
-        printf "$ssym""$staged"
+        printf "$ssym$staged"
       fi
       if [ $unstaged != "0" ]
       then
-        printf "$ussym""$unstaged"
+        printf "$ussym$unstaged"
       fi
       if [ $untracked != "0" ]
       then 
-        printf "$utsym""$untracked"
+        printf "$utsym$untracked"
       fi
     else
       printf "$clcol""$clsym""$col"
