@@ -124,8 +124,8 @@ __git_branch_status() {
   if [ "$branch" != "(no branch)" ]
   then
     remote=$(git config branch."$branch".remote 2>/dev/null) &&
-    rmbranch=$(git config branch."$branch".merge | cut -c 12-) &&
-    revlist=$(git rev-list --left-right refs/remotes/"$remote"/"$rmbranch"...HEAD) && 
+    rmbranch=$(git config branch."$branch".merge 2>/dev/null | cut -c 12-) &&
+    revlist=$(git rev-list --left-right refs/remotes/"$remote"/"$rmbranch"...HEAD 2>/dev/null) && 
     (
       ahead=$(echo "$revlist" | grep -c "^>")
       behind=$(echo "$revlist" | grep -c "^<")
