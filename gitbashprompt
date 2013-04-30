@@ -63,6 +63,20 @@ __git_bash_prompt() {
     efolder="$folder"
    ###
 
+   ### Deal with path starting with /
+    if [ $i -eq 0 -a ! "$folder" ]
+    then
+      cd /
+    fi
+   ### 
+
+   ### Deal with ~
+    if [ "$folder" = "~" ]
+    then
+      efolder="$HOME"
+    fi
+   ###
+
    ### Print / before the folder if not the first of if path is only /
     if [ $i -gt 0 -o "$path" = / ]
     then
