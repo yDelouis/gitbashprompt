@@ -9,10 +9,28 @@
 #
 # See <http://blog.rom1v.com/2012/04/prompt-bash-pour-git/>
 
+### Get colors for non git part
+__user_color="0"
+__machine_color="0"
+__path_color="0"
+if [ $# -gt 0 ] 
+then
+  __user_color="$1"
+fi
+if [ $# -gt 1 ]
+then 
+  __machine_color="$2"
+fi
+if [ $# -gt 2 ] 
+then
+  __path_color="$3"
+fi
+
+### Method which print path and git info
 __git_bash_prompt() {
 
  ### Init colors
-  local nocol='\001\e[0m\002'
+  local pcol='\001\e['"$__path_color"'m\002'
   # branch color
   local col='\001\e[36m\002' # blue
   # detached HEAD color
@@ -107,7 +125,7 @@ __git_bash_prompt() {
         printf $col"("
         __git_branch_status
         __git_status
-        printf ")"$nocol
+        printf ")"$pcol
       fi
     fi
    ###
@@ -126,9 +144,9 @@ __git_branch() {
     then
       gitinfo="$(git describe 2>/dev/null ||
                  git rev-list HEAD -1 | cut -c-7)"
-      printf $col@$dcol"$gitinfo"$nocol
+      printf $col@$dcol"$gitinfo"$pcol
     else
-      printf $col@"$gitinfo"$nocol
+      printf $col@"$gitinfo"$pcol
     fi
   fi
 }
@@ -189,8 +207,4 @@ __git_status() {
   fi
 }
 
-if [ "$color_prompt" = yes ]; then
-	PS1='${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]$(__git_bash_prompt "\w")\[\033[00m\]\$ '
-else
-	PS1='${debian_chroot:+($debian_chroot)}\u@\h:$(__git_bash_prompt "\w")\$ '
-fi
+PS1='${debian_chroot:+($debian_chroot)}\[\033['"$__user_color"'m\]\u\[\033['"$__machine_color"'m\]@\h\[\033[00m\]:\[\033['"$__path_color"'m\]$(__git_bash_prompt "\w")\[\033[00m\]\$ '
