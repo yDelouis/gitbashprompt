@@ -32,13 +32,13 @@ __git_bash_prompt() {
  ### Init colors
   local pcol='\001\e['"$__path_color"'m\002'
   # branch color
-  local bcol='\001\e[36m\002' # blue
+  local bcol='\001\e[0;36m\002' # blue
   # detached HEAD color
-  local dcol='\001\e[31m\002' # red
+  local dcol='\001\e[0;31m\002' # red
   # conflict color
-  local ccol='\001\e[31m\002' # red
+  local ccol='\001\e[0;31m\002' # red
   # Clean color
-  local clcol='\001\e[32m\002' # green
+  local clcol='\001\e[0;32m\002' # green
  ###
 
  ### Init symbols
