@@ -26,117 +26,21 @@ then
   __path_color="$3"
 fi
 
-### Method which print path and git info
-__git_bash_prompt() {
+########################### Git part ###################################
 
- ### Init colors
-  local pcol='\001\e['"$__path_color"'m\002'
-  # branch color
-  local bcol='\001\e[0;36m\002' # blue
-  # detached HEAD color
-  local dcol='\001\e[0;31m\002' # red
-  # conflict color
-  local ccol='\001\e[0;31m\002' # red
-  # Clean color
-  local clcol='\001\e[0;32m\002' # green
- ###
+_GIT_COLOR_BRANCH="\033[1;31m"
+_GIT_COLOR_CONFLICT="%{$fg[red]%}"
+_GIT_COLOR_CLEAN="%{$fg[green]%}"
 
- ### Init symbols
-  # ahead
-  local asym="↑"
-  # behind
-  local bsym="↓"
-  # conflict
-  local csym="✘"
-  # staged
-  local ssym="●"
-  # unstaged
-  local ussym="~"
-  # untracked
-  local utsym="…"
-  # clean
-  local clsym="✔"
- ###
+_GIT_SYMBOL_AHEAD='↑'
+_GIT_SYMBOL_BEHIND='↓'
+_GIT_SYMBOL_CONFLICT='✘'
+_GIT_SYMBOL_STAGED='●'
+_GIT_SYMBOL_UNSTAGED='~'
+_GIT_SYMBOL_UNTRACKED='…'
+_GIT_SYMBOL_CLEAN='✔'
 
- ### Split current path
-  SFI="$IFS"
-  IFS=/
-  local path="$1"
-  local folders=($path)
-  path=${path/\~/$HOME}
-  local count=${#folders[@]}
-  IFS="$SFI"
- ### 
- 
- ### For all folders of path
-  local i=0
-  local folder= # current folder for printing
-  local efolder= # current folder for using in scripts
-  local curpath= # path of folder which is currently written
-  local toplevel=$(git rev-parse --show-toplevel 2> /dev/null) # closer git 
-  while [ $i -lt $count ]
-  do
-   ### Set folder and efolder
-    folder="${folders[$i]}"
-    efolder="$folder"
-   ###
-
-   ### Deal with path starting with /
-    if [ $i -eq 0 -a ! "$folder" ]
-    then
-      cd /
-    fi
-   ### 
-
-   ### Deal with ~
-    if [ "$folder" = "~" ]
-    then
-      efolder="$HOME"
-    fi
-   ###
-
-   ### Print / before the folder if not the first of if path is only /
-    if [ $i -gt 0 -o "$path" = / ]
-    then
-      printf /
-      curpath="$curpath/"
-    fi
-   ###
- 
-   ### Deal with ~
-    if [ "$folder" = "~" ]
-    then
-      efolder="$HOME"
-    fi
-   ###
-   
-   ### Append efolder to current path 
-    curpath="$curpath$efolder"
-   ###
-
-   ### Print folder and git infos
-    printf "$folder"
-    cd "$efolder"
-    if [ -e .git ]
-    then
-      __git_branch 
-      if [ "$curpath" = "$toplevel" ]
-      then
-        printf $bcol"("
-        __git_branch_status
-        __git_status
-        printf ")"$pcol
-      fi
-    fi
-   ###
-
-   ### Increment i
-    i=$(($i+1))
-   ###
-  done
-}
-
-__git_branch() {
+_GIT_BRANCH() {
   gitinfo="$(git branch 2>/dev/null | sed -n 's/^* //p')"
   if [ "$gitinfo" ]
   then
@@ -144,30 +48,28 @@ __git_branch() {
     then
       gitinfo="$(git describe 2>/dev/null ||
                  git rev-list HEAD -1 | cut -c-7)"
-      printf $bcol@$dcol"$gitinfo"$pcol
-    else
-      printf $bcol@"$gitinfo"$pcol
     fi
+      printf "$gitinfo"
   fi
 }
 
-__git_branch_status() {
+_GIT_BRANCH_STATUS() {
   branch=$(git branch 2>/dev/null | sed -n 's/^* //p')
   if [ "$branch" != "(no branch)" ]
   then
     remote=$(git config branch."$branch".remote 2>/dev/null) &&
     rmbranch=$(git config branch."$branch".merge 2>/dev/null | cut -c 12-) &&
-    revlist=$(git rev-list --left-right refs/remotes/"$remote"/"$rmbranch"...HEAD 2>/dev/null) && 
+    revlist=$(git rev-list --left-right refs/remotes/"$remote"/"$rmbranch"...HEAD 2>/dev/null) &&
     (
       ahead=$(echo "$revlist" | grep -c "^>")
       behind=$(echo "$revlist" | grep -c "^<")
       if [ $ahead != "0" ]
       then
-        printf "$asym$ahead"
+        printf "$_GIT_SYMBOL_AHEAD$ahead"
       fi
       if [ $behind != "0" ]
       then
-        printf "$bsym$behind"
+        printf "$_GIT_SYMBOL_BEHIND$behind"
       fi
       if [ $ahead != "0" -o $behind != "0" ]
       then
@@ -177,34 +79,45 @@ __git_branch_status() {
   fi
 }
 
-__git_status() {
-  status=$(git status --porcelain | cut -c 1-2) 
-  conflict=$(echo "$status" | grep -c -e "DD" -e "AA" -e "U")
+_GIT_STATUS() {
+  sstatus=$(git status --porcelain | cut -c 1-2)
+  conflict=$(echo "$sstatus" | grep -c -e "DD" -e "AA" -e "U")
   if [ $conflict != "0" ]
   then
-    printf "$ccol$conflict$csym$bcol"
+    printf "$_GIT_COLOR_CONFLICT$conflict$_GIT_SYMBOL_CONFLICT\[\033[00m\]"
   else
-    staged=$(echo "$status" | grep -c -e "^M" -e "^A" -e "^D" -e "^R" -e "^C") 
-    unstaged=$(echo "$status" | grep -c -e "M$" -e "D$")
-    untracked=$(echo "$status" | grep -c "??")
+    staged=$(echo "$sstatus" | grep -c -e "^M" -e "^A" -e "^D" -e "^R" -e "^C")
+    unstaged=$(echo "$sstatus" | grep -c -e "M$" -e "D$")
+    untracked=$(echo "$sstatus" | grep -c "??")
     if [ $staged != "0" -o $unstaged != "0" -o $untracked != "0" ]
     then
       if [ $staged != "0" ]
       then
-        printf "$ssym$staged"
+        printf "$_GIT_SYMBOL_STAGED$staged"
       fi
       if [ $unstaged != "0" ]
       then
-        printf "$ussym$unstaged"
+        printf "$_GIT_SYMBOL_UNSTAGED$unstaged"
       fi
       if [ $untracked != "0" ]
-      then 
-        printf "$utsym$untracked"
+      then
+        printf "$_GIT_SYMBOL_UNTRACKED$untracked"
       fi
     else
-      printf "$clcol""$clsym""$bcol"
+      printf "$_GIT_COLOR_CLEAN$_GIT_SYMBOL_CLEAN\[\033[00m\]"
     fi
   fi
 }
 
-PS1='${debian_chroot:+($debian_chroot)}\[\033['"$__user_color"'m\]\u\[\033['"$__machine_color"'m\]@\h\[\033[00m\]:\[\033['"$__path_color"'m\]$(__git_bash_prompt "\w")\[\033[00m\]\$ '
+_GIT() {
+  hasGit="$(git status 2> /dev/null)"
+  if [ "$hasGit" ]
+  then
+     printf "on $_GIT_COLOR_BRANCH$(_GIT_BRANCH)\033[00m ($(_GIT_BRANCH_STATUS)$(_GIT_STATUS))\033[00m"
+  fi
+}
+
+########################### Git part ###################################
+
+PS1='${debian_chroot:+($debian_chroot)}\[\033['"$__user_color"'m\]\u\[\033[00m\] at \[\033['"$__machine_color"'m\]\h\[\033[00m\] in \[\033['"$__path_color"'m\]\w\[\033[00m\] $(_GIT)\[\033[00m\] 
+\[\033['"$__user_color"'m\]> \[\033[00m\]'
