@@ -29,8 +29,8 @@ fi
 ########################### Git part ###################################
 
 _GIT_COLOR_BRANCH="\033[1;31m"
-_GIT_COLOR_CONFLICT="%{$fg[red]%}"
-_GIT_COLOR_CLEAN="%{$fg[green]%}"
+_GIT_COLOR_CONFLICT="\033[1;31m"
+_GIT_COLOR_CLEAN="\033[1;32m"
 
 _GIT_SYMBOL_AHEAD='↑'
 _GIT_SYMBOL_BEHIND='↓'
@@ -84,7 +84,7 @@ _GIT_STATUS() {
   conflict=$(echo "$sstatus" | grep -c -e "DD" -e "AA" -e "U")
   if [ $conflict != "0" ]
   then
-    printf "$_GIT_COLOR_CONFLICT$conflict$_GIT_SYMBOL_CONFLICT\[\033[00m\]"
+    printf "$_GIT_COLOR_CONFLICT$conflict$_GIT_SYMBOL_CONFLICT\033[00m"
   else
     staged=$(echo "$sstatus" | grep -c -e "^M" -e "^A" -e "^D" -e "^R" -e "^C")
     unstaged=$(echo "$sstatus" | grep -c -e "M$" -e "D$")
@@ -104,7 +104,7 @@ _GIT_STATUS() {
         printf "$_GIT_SYMBOL_UNTRACKED$untracked"
       fi
     else
-      printf "$_GIT_COLOR_CLEAN$_GIT_SYMBOL_CLEAN\[\033[00m\]"
+      printf "$_GIT_COLOR_CLEAN$_GIT_SYMBOL_CLEAN\033[00m"
     fi
   fi
 }
@@ -119,5 +119,6 @@ _GIT() {
 
 ########################### Git part ###################################
 
-PS1='${debian_chroot:+($debian_chroot)}\[\033['"$__user_color"'m\]\u\[\033[00m\] at \[\033['"$__machine_color"'m\]\h\[\033[00m\] in \[\033['"$__path_color"'m\]\w\[\033[00m\] $(_GIT)\[\033[00m\] 
+PS1='${debian_chroot:+($debian_chroot)}
+\[\033['"$__user_color"'m\]\u\[\033[00m\] at \[\033['"$__machine_color"'m\]\h\[\033[00m\] in \[\033['"$__path_color"'m\]\w\[\033[00m\] $(_GIT)\[\033[00m\] 
 \[\033['"$__user_color"'m\]> \[\033[00m\]'
